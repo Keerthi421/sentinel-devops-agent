@@ -1,0 +1,78 @@
+version: '3.8'
+
+networks:
+  sentinel-net:
+    driver: bridge
+
+services:
+  # Postgres for Kestra
+  postgres:
+    image: postgres:15
+    container_name: kestra-postgres
+    environment:
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: kestra
+      POSTGRES_DB: kestra
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sentinel-net
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kestra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Kestra Workflow Orchestrator
+  kestra:
+    image: kestra/kestra:latest
+    container_name: kestra
+    command: server standalone
+    ports:
+      - "9090:8080"
+    volumes:
+      - ./kestra-flows:/app/flows
+      - kestra-data:/app/storage
+    environment:
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://postgres:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: kestra
+            password: kestra
+        kestra:
+          server:
+            basic-auth:
+              enabled: false
+          repository:
+            type: postgres
+          queue:
+            type: postgres
+          storage:
+            type: local
+            local:
+              base-path: /app/storage
+    networks:
+      - sentinel-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+
+  # Mock Auth Service
+  auth-service:
+    build: ./services/auth-service
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    networks:
+      - sentinel-net
+    restart: always
+
+volumes:
+  postgres-data:
+  kestra-data:

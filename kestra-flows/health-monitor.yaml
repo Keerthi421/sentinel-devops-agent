@@ -1,0 +1,19 @@
+id: health-monitor
+namespace: sentinel
+
+tasks:
+  - id: check-auth-service
+    type: io.kestra.plugin.core.http.Request
+    uri: http://auth-service:3001/health
+
+  - id: parse-response
+    type: io.kestra.plugin.core.log.Log
+    message: |
+      ===== Auth Service Health Check =====
+      Raw Response: {{ outputs['check-auth-service'].body }}
+      Status Code: {{ outputs['check-auth-service'].code }}
+
+triggers:
+  - id: schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/1 * * * *"
