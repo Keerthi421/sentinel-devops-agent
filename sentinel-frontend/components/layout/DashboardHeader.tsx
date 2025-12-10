@@ -18,9 +18,9 @@ export function DashboardHeader() {
                     <input
                         type="text"
                         placeholder="Search services, incidents, logs..."
+                        aria-label="Search services, incidents, logs"
                         className="w-full bg-white/5 border border-white/10 rounded-full py-1.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-muted-foreground/50"
                     />
-                </div>
             </div>
 
             <div className="flex items-center gap-4 relative">
