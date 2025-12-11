@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   sentinel-net:
     driver: bridge
@@ -37,6 +35,7 @@ services:
       - ./kestra-flows:/app/flows
       - kestra-data:/app/storage
     environment:
+      SECRET_GROQ_API_KEY: ${SECRET_GROQ_API_KEY}
       KESTRA_CONFIGURATION: |
         datasources:
           postgres:
@@ -56,6 +55,9 @@ services:
             type: local
             local:
               base-path: /app/storage
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - sentinel-net
     depends_on:
@@ -73,6 +75,39 @@ services:
       - sentinel-net
     restart: always
 
+  # Mock Payment Service
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment-service
+    ports:
+      - "3002:3002"
+    networks:
+      - sentinel-net
+    restart: always
+
+  # Mock Notification Service
+  notification-service:
+    build: ./services/notification-service
+    container_name: notification-service
+    ports:
+      - "3003:3003"
+    networks:
+      - sentinel-net
+    restart: always
+
+  # Ollama AI (The Brain)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - sentinel-net
+    restart: always
+
 volumes:
   postgres-data:
   kestra-data:
+  ollama-data:

@@ -1,0 +1,60 @@
+id: intelligent-monitor
+namespace: sentinel
+
+tasks:
+  # 1. Fetch Health Data (Parallel) - Continue even on failures
+  - id: fetch-metrics
+    type: io.kestra.plugin.core.flow.Parallel
+    allowFailure: true
+    tasks:
+      - id: get-auth
+        type: io.kestra.plugin.core.http.Request
+        uri: http://auth-service:3001/health
+        allowFailure: true
+      
+      - id: get-payment
+        type: io.kestra.plugin.core.http.Request
+        uri: http://payment-service:3002/health
+        allowFailure: true
+      
+      - id: get-notify
+        type: io.kestra.plugin.core.http.Request
+        uri: http://notification-service:3003/health
+        allowFailure: true
+
+  # 2. AI Analysis (Using Real Data + Secure Key)
+  - id: ai-analysis
+    type: io.kestra.plugin.core.http.Request
+    uri: https://api.groq.com/openai/v1/chat/completions
+    method: POST
+    headers:
+      Authorization: "Bearer {{ secret('GROQ_API_KEY') }}"
+      Content-Type: "application/json"
+    body: |
+      {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are Sentinel, a DevOps AI. Analyze service health and provide concise status: HEALTHY, DEGRADED, or CRITICAL with brief reasoning."
+          },
+          {
+            "role": "user",
+            "content": "Service Health Check Results:\n- Auth Service: {{ outputs['get-auth'] is defined and outputs['get-auth'] is not null ? (outputs['get-auth'].code ?? 'ERROR') : 'DOWN' }}\n- Payment Service: {{ outputs['get-payment'] is defined and outputs['get-payment'] is not null ? (outputs['get-payment'].code ?? 'ERROR') : 'DOWN' }}\n- Notification Service: {{ outputs['get-notify'] is defined and outputs['get-notify'] is not null ? (outputs['get-notify'].code ?? 'ERROR') : 'DOWN' }}\n\nAnalyze the overall system health."
+          }
+        ],
+        "temperature": 0.3,
+        "max_tokens": 150
+      }
+
+  # 3. Log the AI Decision
+  - id: log-decision
+    type: io.kestra.plugin.core.log.Log
+    message: |
+      🤖 SENTINEL AI REPORT:
+      {{ outputs['ai-analysis'].body | jq(".choices[0].message.content") | first }}
+
+triggers:
+  - id: monitor-schedule
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "*/1 * * * *"
