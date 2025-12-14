@@ -13,7 +13,7 @@
 
 **Sentinel** is an AI-driven autonomous DevOps agent that predicts system failures, analyzes root causes using LLMs, and executes self-healing workflows—**without human intervention**.
 
-🌐 **[Live Demo on Vercel](https://sentinel-devops-agent.vercel.app)** | 📖 [Documentation](ARCHITECTURE.md)
+🌐 **[Live Demo on Vercel](https://sentinel-devops-agent.vercel.app)** | 🎥 **[Watch Demo Video](https://youtu.be/VlqGomVrFzQ)** | 📖 [Documentation](ARCHITECTURE.md)
 
 > **Note**: The live demo shows the frontend UI/UX. Backend integration requires local setup (see [Quick Start](#-quick-start)).
 
