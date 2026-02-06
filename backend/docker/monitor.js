@@ -27,6 +27,10 @@ class ContainerMonitor {
                 this.stopMonitoring(containerId);
             });
 
+            stream.on('end', () => {
+                this.stopMonitoring(containerId);
+            });
+
             this.watchers.set(containerId, stream);
         } catch (error) {
             console.error(`Failed to start monitoring ${containerId}:`, error);
@@ -54,10 +58,16 @@ class ContainerMonitor {
             cpuPercent = (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100;
         }
 
-        // Calculate memory percentage
-        const memUsage = stats.memory_stats.usage;
-        const memLimit = stats.memory_stats.limit;
-        const memPercent = (memUsage / memLimit) * 100;
+        // Calculate memory percentage safely
+        // memory_stats might be missing or empty on some platforms/versions
+        const memStats = stats.memory_stats || {};
+        const memUsage = memStats.usage || 0;
+        const memLimit = memStats.limit || 0;
+        let memPercent = 0;
+
+        if (memLimit > 0) {
+            memPercent = (memUsage / memLimit) * 100;
+        }
 
         return {
             cpu: cpuPercent.toFixed(2),
@@ -75,7 +85,7 @@ class ContainerMonitor {
     }
 
     formatBytes(bytes) {
-        if (bytes === 0) return '0 B';
+        if (!bytes || bytes === 0) return '0 B';
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));

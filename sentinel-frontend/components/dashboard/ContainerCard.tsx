@@ -53,7 +53,11 @@ export function ContainerCard({ container, onRestart }: ContainerCardProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                    onClick={() => onRestart(container.id)}
+                    onClick={() => {
+                        if (window.confirm(`Are you sure you want to restart container ${container.name}?`)) {
+                            onRestart(container.id);
+                        }
+                    }}
                     title="Restart Container"
                 >
                     <RefreshCw className="h-4 w-4" />

@@ -3,7 +3,7 @@ const { docker } = require('./client');
 async function restartContainer(containerId) {
     try {
         const container = docker.getContainer(containerId);
-        await container.restart({ t: 10 }); // 10 second timeout
+        await container.restart({ t: 10 });
         return { action: 'restart', success: true, containerId };
     } catch (error) {
         console.error(`Failed to restart container ${containerId}:`, error);
@@ -16,25 +16,33 @@ async function recreateContainer(containerId) {
         const container = docker.getContainer(containerId);
         const info = await container.inspect();
 
-        // Stop and remove
-        await container.stop();
-        await container.remove();
+        // Prepare new configuration
+        // Use proper mapping for NetworkingConfig from validated inspection
+        const networkingConfig = {
+            EndpointsConfig: info.NetworkSettings.Networks
+        };
 
-        // Recreate with same config
-        const config = info.Config;
-        const hostConfig = info.HostConfig;
-        // Note: Creating a container exactly as before can be complex if there are many options.
-        // We strive to copy the most important ones.
-
+        // Create new container first
+        const newName = `${info.Name.replace('/', '')}-new`;
         const newContainer = await docker.createContainer({
-            Image: config.Image,
-            name: info.Name.replace('/', ''),
-            ...config,
-            HostConfig: hostConfig,
-            NetworkingConfig: info.NetworkSettings
+            Image: info.Config.Image,
+            name: newName,
+            ...info.Config,
+            HostConfig: info.HostConfig,
+            NetworkingConfig: networkingConfig
         });
 
         await newContainer.start();
+
+        // Now safely remove the old one if it was running
+        if (info.State.Running) {
+            await container.stop();
+        }
+        await container.remove();
+
+        // Rename new container to old name
+        await newContainer.rename({ name: info.Name.replace('/', '') });
+
         return { action: 'recreate', success: true, newId: newContainer.id };
     } catch (error) {
         console.error(`Failed to recreate container ${containerId}:`, error);
@@ -43,18 +51,20 @@ async function recreateContainer(containerId) {
 }
 
 async function scaleService(serviceName, replicas) {
-    // For Docker Swarm
     try {
         const service = docker.getService(serviceName);
         const info = await service.inspect();
         const version = info.Version.Index;
 
+        // Merge new replicas into existing spec
+        const spec = { ...info.Spec };
+        if (!spec.Mode) spec.Mode = {};
+        if (!spec.Mode.Replicated) spec.Mode.Replicated = {};
+        spec.Mode.Replicated.Replicas = parseInt(replicas, 10);
+
         await service.update({
-            version: version, // Required for update
-            Mode: {
-                Replicated: { Replicas: parseInt(replicas) }
-            },
-            TaskTemplate: info.Spec.TaskTemplate
+            version: version,
+            ...spec
         });
         return { action: 'scale', replicas, success: true };
     } catch (error) {

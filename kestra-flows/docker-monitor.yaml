@@ -1,18 +1,11 @@
 id: docker-container-monitor
-namespace: sentinel.docker
-description: Monitor Docker containers and auto-heal
-
-triggers:
-  - id: schedule
-    type: io.kestra.plugin.core.trigger.Schedule
-    cron: "*/30 * * * * *"
+namespace: sentinel.devops
 
 tasks:
   - id: get-containers
     type: io.kestra.plugin.core.http.Request
-    uri: http://backend:4000/api/docker/containers
-    method: GET
-  
+    uri: http://host.docker.internal:4000/api/docker/containers
+
   - id: check-unhealthy
     type: io.kestra.plugin.core.flow.EachParallel
     value: "{{ outputs['get-containers'].body.containers }}"
@@ -21,7 +14,7 @@ tasks:
         type: io.kestra.plugin.core.flow.If
         condition: "{{ taskrun.value.health == 'unhealthy' }}"
         then:
-          - id: restart-container
+          - id: try-restart-container
             type: io.kestra.plugin.core.http.Request
-            uri: "http://backend:4000/api/docker/restart/{{ taskrun.value.id }}"
+            uri: "http://host.docker.internal:4000/api/docker/try-restart/{{ taskrun.value.id }}"
             method: POST
