@@ -3,6 +3,17 @@
 import { useEffect } from 'react';
 import { RefreshCw, Home, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
+
+/**
+ * Runtime Error Boundary
+ * 
+ * This component acts as a React Error Boundary for catching runtime errors
+ * in nested components. It displays a user-friendly error message and provides
+ * a way to recover (Try Again).
+ * 
+ * Note: 'use client' is required for error boundaries in Next.js.
+ */
 
 interface ErrorProps {
     error: Error & { digest?: string };
@@ -11,8 +22,8 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
     useEffect(() => {
-
-        console.error('Application error:', error);
+        // Log error using structured logger
+        logger.error(error, { component: 'ErrorPage' });
     }, [error]);
 
     return (
@@ -30,7 +41,7 @@ export default function Error({ error, reset }: ErrorProps) {
                 </h2>
 
                 <p className="text-muted-foreground mb-4">
-                    Sentinel encountered an unexpected error. Don't worry, our AI is
+                    Sentinel encountered an unexpected error. Don&apos;t worry, our AI is
                     already analyzing what went wrong.
                 </p>
 
@@ -47,21 +58,33 @@ export default function Error({ error, reset }: ErrorProps) {
                 )}
 
 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <button
-                        onClick={reset}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors"
-                    >
-                        <RefreshCw size={20} />
-                        Try Again
-                    </button>
+                <div className="flex flex-col gap-4 justify-center items-center">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <button
+                            onClick={reset}
+                            aria-label="Try to recover from the error"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium transition-colors"
+                        >
+                            <RefreshCw size={20} />
+                            Try Again
+                        </button>
 
+                        <Link
+                            href="/dashboard"
+                            aria-label="Return to Dashboard"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg font-medium transition-colors"
+                        >
+                            <Home size={20} />
+                            Go to Dashboard
+                        </Link>
+                    </div>
+                    {/* Fallback to Home if Dashboard is broken */}
                     <Link
-                        href="/dashboard"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-lg font-medium transition-colors"
+                        href="/"
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors hover:underline"
+                        aria-label="Return to Home Page"
                     >
-                        <Home size={20} />
-                        Go to Dashboard
+                        Or return to Home
                     </Link>
                 </div>
 

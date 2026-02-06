@@ -20,7 +20,7 @@ export function useIncidents() {
 
                 // Parse AI analysis
                 let aiData: any = {};
-                let rawAnalysis = latestInsight.analysis || latestInsight.summary || "";
+                const rawAnalysis = latestInsight.analysis || latestInsight.summary || "";
 
                 try {
                     if (rawAnalysis.trim().startsWith('{')) {

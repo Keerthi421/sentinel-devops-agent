@@ -4,7 +4,7 @@ import { Incident } from "@/lib/mockData";
 import {
     AlertTriangle,
     CheckCircle,
-    XCircle,
+    CircleX,
     ChevronDown,
     ChevronUp,
     Zap,
@@ -27,7 +27,7 @@ export function IncidentCard({ incident, onViewReasoning }: IncidentCardProps) {
         switch (incident.status) {
             case "resolved": return <CheckCircle className="h-5 w-5 text-green-500" />;
             case "in-progress": return <AlertTriangle className="h-5 w-5 text-orange-500" />;
-            case "failed": return <XCircle className="h-5 w-5 text-red-500" />;
+            case "failed": return <CircleX className="h-5 w-5 text-red-500" />;
         }
     };
 
@@ -58,7 +58,7 @@ export function IncidentCard({ incident, onViewReasoning }: IncidentCardProps) {
                                 <span className="text-sm text-muted-foreground">{incident.timestamp.split('T')[0]}</span>
                             </div>
                             <h4 className={`font-semibold text-lg leading-tight mb-1 ${incident.severity === 'critical' ? 'text-red-400' :
-                                    incident.severity === 'warning' ? 'text-yellow-400' : 'text-white'
+                                incident.severity === 'warning' ? 'text-yellow-400' : 'text-white'
                                 }`}>
                                 {incident.title}
                             </h4>
