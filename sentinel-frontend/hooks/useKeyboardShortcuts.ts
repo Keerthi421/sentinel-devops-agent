@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
 type ShortcutHandler = () => void;
@@ -16,7 +16,7 @@ export function useKeyboardShortcuts() {
     const [showHelp, setShowHelp] = useState(false);
     const [pendingKey, setPendingKey] = useState<string | null>(null);
 
-    const shortcuts: Shortcut[] = [
+    const shortcuts: Shortcut[] = useMemo(() => [
         // Navigation (G + key)
         { key: 'g+d', description: 'Go to Dashboard', handler: () => router.push('/dashboard') },
         { key: 'g+s', description: 'Go to Services', handler: () => router.push('/dashboard/services') },
@@ -32,7 +32,6 @@ export function useKeyboardShortcuts() {
                 const searchInput = document.querySelector<HTMLInputElement>('[data-search]');
                 if (searchInput) {
                     searchInput.focus();
-                    event?.preventDefault();
                 }
             }
         },
@@ -44,7 +43,7 @@ export function useKeyboardShortcuts() {
                 router.refresh();
             }
         },
-    ];
+    ], [router]);
 
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
         // Ignore if typing in input
